@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # Page Configuration - Dark Theme Styling
 st.set_page_config(
-    page_title="Stock Screener - US200",
+    page_title="US Stock Screener - Chartink Style",
     page_icon="📈",
     layout="wide"
 )
@@ -40,20 +40,37 @@ with col_h1:
     st.markdown("### STOCKS")
     st.caption("Custom Screener: EMA (5 > 13 > 34) + Volume Spike + Bullish Candle")
 
-# Stock Universe (~200 US stocks)
+# Updated Full Stock Universe List
 @st.cache_data
 def get_stock_universe():
     raw_list = """
-    AAPL, MSFT, NVDA, AMZN, GOOGL, GOOG, META, BRK-B, ELI, AVGO, TSLA, JPM, WMT, V, XOM, UNH, MA, ORCL, PG, COST, 
-    HD, JNJ, BAC, NFLX, ABV, MRK, CRM, AMD, CVX, WFC, PEP, ADBE, LIN, KO, TMO, QCOM, CSCO, ACN, TMUS, MCD, 
-    GE, INTU, ABT, DHR, CAT, VZ, AMGN, PM, DIS, AXP, PFE, IBM, TXN, MS, CMCSA, NEE, GS, LOW, UNP, 
-    SPGI, INTC, COP, HON, AMAT, BKNG, TJX, SYK, MDT, ETN, VRTX, UPS, LMT, BLK, BA, RTX, REGN, ADP, CB, 
-    MDLZ, MMC, ADI, ISRG, LRCX, PANW, MU, CI, PLTR, SCHW, C, FI, BSX, DE, BMY, KLAC, SBUX, HCA, NOW, 
-    SNPS, CDNS, ANET, NOC, APH, WM, CRWD, GD, EOG, T, CL, CVS, BDX, SHW, ROP, MCK, ECL, EMR, COF, PH, 
-    PGR, FDX, ICE, TT, NXPI, CMG, ADSK, ORLY, CTAS, MAR, NSC, AON, MET, JCI, WELL, PCAR, MCO, O, PXD, 
-    FCX, D, SO, DUK, AJG, PAYX, MMM, EW, HUM, DAL, NUE, GILD, ALL, HMC, F, GM, KMB, OXY, MPC, VLO, 
-    PSX, ROST, TRV, STZ, AEP, SRE, CNC, IQV, DOW, CPRT, MCHP, TEL, KR, A, BKR, KMI, AME, FIS, PRU, FAST, 
-    GWW, KHC, ED, WEC, PEG, AWK, SBAC, VRSK, KEYS, WTW, DD, FTV, EFX
+    A, AAL, AAP, AAPL, ABBV, ABNB, ABT, ACGL, ACN, ADBE, ADI, ADM, ADP, ADSK, AEE, AEP, AES, AFL, AIG, AIZ, 
+    AJG, AKAM, ALB, ALGN, ALL, ALLE, AMAT, AMCR, AMD, AME, AMGN, AMP, AMT, AMZN, ANET, ANSS, AON, AOS, APA, APD, 
+    APH, APTV, ARE, ATO, AVB, AVGO, AVY, AWK, AXON, AXP, AYI, AZO, BA, BAC, BALL, BAX, BBY, BDX, BEN, BF-B, 
+    BG, BIIB, BIO, BK, BKNG, BKR, BLDR, BLK, BMY, BR, BRK-B, BRO, BSX, BWA, BX, BXP, C, CADD, CAG, CAH, 
+    CARR, CAT, CB, CBOE, CBRE, CCI, CCK, CELH, CE, CF, CFG, CHD, CHTR, CI, CINF, CINC, CL, CLX, CMA, 
+    CMCSA, CME, CMG, CMI, CMS, CNC, CNP, COF, COO, COP, COR, COST, CPB, CPAY, CPRT, CPT, CRL, CRM, CRWD, 
+    CSCO, CSGP, CSX, CTAS, CTRA, CTSH, CTVA, CVS, CVX, CZR, D, DAL, DD, DE, DECK, DFS, DG, DGX, DHI, DHR, 
+    DIS, DLR, DLTR, DOV, DOW, DPZ, DRI, DTE, DUK, DVA, DVN, DXCM, DXC, EA, EBAY, ECL, ED, EFX, EG, 
+    EIX, EL, ELV, EMN, EMR, ENPH, EOG, EPAM, EQH, EQIX, EQR, ERIE, ES, ESS, ETN, ETR, ETSY, EVRG, EW, 
+    EXC, EXPD, EXPE, EXR, F, FANG, FAST, FI, FICO, FIS, FITB, FLT, FMC, FOXA, FOX, FRT, FTNT, FTV, GD, GE, 
+    GEV, GILD, GIS, GL, GLW, GM, GNRC, GOOGL, GOOG, GPC, GPN, GRMN, GS, GWW, HAL, HAS, HBAN, HCA, HD, HES, 
+    HIG, HII, HLT, HOLX, HON, HPE, HPQ, HRL, HSIC, HST, HSY, HUBB, HUM, HWM, IBM, ICE, IDXX, IEX, IFF, ILMN, 
+    INCY, INTC, INTU, INVH, IP, IPG, IQV, IR, IRM, ISRG, IT, ITW, IVZ, J, JACO, JAMF, JBHT, JBL, JCI, 
+    JKHY, JNJ, JNPR, JPM, JWN, K, KDP, KEY, KEYS, KHC, KIM, KLAC, KMB, KMI, KMX, KO, KR, KVUE, L, LDOS, 
+    LEN, LH, LHX, LIN, LKQ, LLY, LMT, LNC, LNT, LOW, LRCX, LULU, LUV, LVS, LW, LYB, LYV, M, MA, MAA, 
+    MAR, MAS, MAT, MCD, MCHP, MCK, MCO, MDLZ, MDT, MET, META, MGM, MHK, MKC, MKTX, MLM, MMC, MMM, MNST, MO, 
+    MOH, MOS, MPC, MPWR, MRK, MRNA, MS, MSCI, MSFT, MSI, MTB, MTCH, MTD, MU, NCLH, NDAQ, NDSN, NEE, NEM, 
+    NFLX, NI, NKE, NOC, NOW, NRG, NSC, NTAP, NTR, NUE, NVDA, NVR, NWL, NWM, NWSA, NWS, NXPI, O, ODFL, OKE, 
+    OMC, ON, ORCL, ORLY, OSK, OTIS, OXY, PANW, PARA, PAYC, PAYX, PBCT, PBI, PCAR, PCG, PEAK, PEG, PEP, PFE, 
+    PFG, PG, PGR, PH, PHM, PKG, PKI, PLD, PLTR, PM, PNC, PNR, PNW, PODD, POOL, PPG, PPL, PRU, PSX, PTC, 
+    PUB, PVH, PWR, PXD, PYPL, QCOM, QRVO, RCL, REG, REGN, RF, RHI, RJF, RL, RMD, ROG, ROL, ROP, ROST, 
+    RPRX, RPM, RRC, RSG, RTX, RVMD, SBAC, SBUX, SCHW, SHW, SJM, SLB, SMCI, SNA, SNPS, SO, SPG, SPGI, SPLK, 
+    STLD, STT, STX, STZ, SWK, SWKS, SYF, SYK, SYY, T, TAP, TDG, TDY, TECH, TEL, TER, TFC, TFX, TGT, TIAn, 
+    TJX, TMO, TMUS, TPR, TRGP, TRMB, TROW, TRV, TSCO, TSLA, TSN, TT, TTWO, TXN, TXT, TYL, UAL, UDR, UHS, 
+    ULTA, UNH, UNP, UPS, URI, USB, V, VEEV, VLO, VMC, VNO, VRSK, VRSN, VRTX, VTR, VTRS, VZ, WAB, WAT, WBA, 
+    WDC, WEC, WELL, WFC, WHR, WM, WMB, WMT, WRB, WRK, WST, WTW, WY, WYNN, XEL, XOM, XRAY, XYL, YUM, ZBH, 
+    ZBRA, ZION, ZTS
     """
     tickers = [t.strip().upper() for t in raw_list.replace('\n', ',').split(',') if t.strip()]
     return sorted(list(set(tickers)))
@@ -65,7 +82,7 @@ st.sidebar.header("⚙️ Screener Controls")
 selected_universe = st.sidebar.multiselect(
     "Select Stock Universe to Scan",
     options=universe,
-    default=universe
+    default=universe[:50]  # Default to first 50 for faster testing, user can select all
 )
 
 run_scan = st.sidebar.button("Run Scan", type="primary", use_container_width=True)
@@ -167,7 +184,7 @@ if run_scan:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
                 
-            # Render interactive dataframe safely without matplotlib dependencies
+            # Render interactive dataframe safely
             st.dataframe(
                 results_df.style.format({
                     'Close': '{:.2f}',
