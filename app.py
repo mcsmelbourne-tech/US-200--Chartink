@@ -40,7 +40,7 @@ with col_h1:
     st.markdown("### STOCKS")
     st.caption("Custom Screener: EMA (5 > 13 > 34) + Volume Spike + Bullish Candle")
 
-# Updated Full Stock Universe List
+# Full Expanded Stock Universe List
 @st.cache_data
 def get_stock_universe():
     raw_list = """
@@ -67,7 +67,7 @@ def get_stock_universe():
     PUB, PVH, PWR, PXD, PYPL, QCOM, QRVO, RCL, REG, REGN, RF, RHI, RJF, RL, RMD, ROG, ROL, ROP, ROST, 
     RPRX, RPM, RRC, RSG, RTX, RVMD, SBAC, SBUX, SCHW, SHW, SJM, SLB, SMCI, SNA, SNPS, SO, SPG, SPGI, SPLK, 
     STLD, STT, STX, STZ, SWK, SWKS, SYF, SYK, SYY, T, TAP, TDG, TDY, TECH, TEL, TER, TFC, TFX, TGT, TIAn, 
-    TJX, TMO, TMUS, TPR, TRGP, TRMB, TROW, TRV, TSCO, TSLA, TSN, TT, TTWO, TXN, TXT, TYL, UAL, UDR, UHS, 
+    TJX, TMO, TMUS,TPR, TRGP, TRMB, TROW, TRV, TSCO, TSLA, TSN, TT, TTWO, TXN, TXT, TYL, UAL, UDR, UHS, 
     ULTA, UNH, UNP, UPS, URI, USB, V, VEEV, VLO, VMC, VNO, VRSK, VRSN, VRTX, VTR, VTRS, VZ, WAB, WAT, WBA, 
     WDC, WEC, WELL, WFC, WHR, WM, WMB, WMT, WRB, WRK, WST, WTW, WY, WYNN, XEL, XOM, XRAY, XYL, YUM, ZBH, 
     ZBRA, ZION, ZTS
@@ -82,7 +82,7 @@ st.sidebar.header("⚙️ Screener Controls")
 selected_universe = st.sidebar.multiselect(
     "Select Stock Universe to Scan",
     options=universe,
-    default=universe[:50]  # Default to first 50 for faster testing, user can select all
+    default=universe  # Defaults to selecting and scanning ALL stocks in the list
 )
 
 run_scan = st.sidebar.button("Run Scan", type="primary", use_container_width=True)
@@ -156,7 +156,7 @@ if run_scan:
     if not selected_universe:
         st.warning("Please choose at least one stock symbol from the sidebar.")
     else:
-        with st.spinner("Processing technical indicators across custom list..."):
+        with st.spinner(f"Processing technical indicators across {len(selected_universe)} stocks..."):
             results_df = run_screener(selected_universe)
             
         st.markdown(f"**Found {len(results_df)} matching stocks**")
