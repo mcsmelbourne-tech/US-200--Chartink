@@ -1,6 +1,7 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import io
 from datetime import datetime, timedelta
 
 # Page Configuration - Dark Theme Styling
@@ -39,7 +40,7 @@ with col_h1:
     st.markdown("### STOCKS")
     st.caption("Custom Screener: EMA (5 > 13 > 34) + Volume Spike + Bullish Candle")
 
-# Your exact provided stock universe (~200 US stocks)
+# Stock Universe (~200 US stocks)
 @st.cache_data
 def get_stock_universe():
     raw_list = """
@@ -54,7 +55,6 @@ def get_stock_universe():
     PSX, ROST, TRV, STZ, AEP, SRE, CNC, IQV, DOW, CPRT, MCHP, TEL, KR, A, BKR, KMI, AME, FIS, PRU, FAST, 
     GWW, KHC, ED, WEC, PEG, AWK, SBAC, VRSK, KEYS, WTW, DD, FTV, EFX
     """
-    # Clean and parse string into unique uppercase tickers
     tickers = [t.strip().upper() for t in raw_list.replace('\n', ',').split(',') if t.strip()]
     return sorted(list(set(tickers)))
 
@@ -65,7 +65,7 @@ st.sidebar.header("⚙️ Screener Controls")
 selected_universe = st.sidebar.multiselect(
     "Select Stock Universe to Scan",
     options=universe,
-    default=universe  # Defaults to scanning the entire list provided
+    default=universe
 )
 
 run_scan = st.sidebar.button("Run Scan", type="primary", use_container_width=True)
@@ -77,7 +77,7 @@ def run_screener(tickers):
     
     total = len(tickers)
     end_date = datetime.today()
-    start_date = end_date - timedelta(days=120)  # Enough historical buffer for 34 EMA & 20 SMA
+    start_date = end_date - timedelta(days=120)
     
     for i, ticker in enumerate(tickers):
         status_text.text(f"Scanning ({i+1}/{total}): {ticker}...")
@@ -89,7 +89,6 @@ def run_screener(tickers):
             if df.empty or len(df) < 40:
                 continue
                 
-            # Flatten multi-index columns if present in newer yfinance releases
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
                 
@@ -110,14 +109,10 @@ def run_screener(tickers):
             volume = float(latest['Volume'])
             vol_sma20 = float(latest['Vol_SMA_20'])
             
-            # User Condition Evaluation:
-            # 1. daily ema(5) > daily ema(13) > daily ema(34)
+            # User Condition Evaluation
             cond_ema = (ema5 > ema13) and (ema13 > ema34)
-            # 2. daily close > daily ema(5)
             cond_close_ema = close > ema5
-            # 3. daily volume > daily sma(volume, 20) * 1.5
             cond_volume = volume > (vol_sma20 * 1.5)
-            # 4. daily close > daily open (Bullish candle requirement)
             cond_candle = close > open_price
             
             if cond_ema and cond_close_ema and cond_volume and cond_candle:
@@ -150,10 +145,9 @@ if run_scan:
         st.markdown(f"**Found {len(results_df)} matching stocks**")
         
         if not results_df.empty:
-            # Add Sr. Index Column starting from 1 (like Chartink UI)
             results_df.insert(0, 'Sr.', range(1, len(results_df) + 1))
             
-            # Action buttons similar to Chartink view
+            # Action buttons
             col_b1, col_b2, col_b3, _ = st.columns([1, 1, 1, 5])
             with col_b1:
                 if st.button("Copy"):
@@ -162,7 +156,16 @@ if run_scan:
                 csv_data = results_df.to_csv(index=False).encode('utf-8')
                 st.download_button("CSV", data=csv_data, file_name="chartink_screener_results.csv", mime="text/csv")
             with col_b3:
-                excel_data = results_df.to_excel(index=False) if hasattr(results_df, 'to_excel') else None # fallback safety
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                    results_df.to_excel(writer, index=False, sheet_name='Screener')
+                excel_data = buffer.getvalue()
+                st.download_button(
+                    label="Excel",
+                    data=excel_data,
+                    file_name="chartink_screener_results.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
                 
             # Render interactive dataframe
             st.dataframe(
