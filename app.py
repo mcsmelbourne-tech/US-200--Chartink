@@ -1,49 +1,74 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
-# Page Configuration
+# Page Configuration - Dark Theme Styling
 st.set_page_config(
-    page_title="US Stock Screener (Chartink Style)",
+    page_title="Stock Screener - US200",
     page_icon="📈",
     layout="wide"
 )
 
-# App Header
-st.title("📈 US Stock Momentum Screener")
+# Custom CSS to mimic Chartink / Dark FinTech UI
 st.markdown("""
-This screener evaluates US stocks based on your custom criteria:
-* **EMA Alignment:** Daily EMA 5 > EMA 13 > EMA 34
-* **Price Position:** Daily Close > EMA 5 and Daily Close > Daily Open (Bullish Candle)
-* **Volume Spike:** Daily Volume > 20-period Volume SMA $\times$ 1.5
-""")
+    <style>
+    .main {
+        background-color: #0e1117;
+        color: #ffffff;
+    }
+    .stButton>button {
+        background-color: #1f2937;
+        color: white;
+        border: 1px solid #374151;
+        border-radius: 4px;
+    }
+    .stButton>button:hover {
+        background-color: #374151;
+        border-color: #4b5563;
+    }
+    .stDataFrame {
+        border-radius: 4px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Pre-defined list of liquid US stocks (Universe sample - can be expanded)
+# App Header Layout resembling Chartink
+col_h1, col_h2 = st.columns([3, 1])
+with col_h1:
+    st.markdown("### STOCKS")
+    st.caption("Custom Screener: EMA (5 > 13 > 34) + Volume Spike + Bullish Candle")
+
+# Your exact provided stock universe (~200 US stocks)
 @st.cache_data
 def get_stock_universe():
-    return [
-        "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "COST", "NFLX",
-        "AMD", "QCOM", "TMUS", "INTC", "AMAT", "CMCSA", "PEP", "ADBE", "TXN", "AMGN",
-        "HON", "IBM", "SBUX", "GILD", "INTU", "MDLZ", "BKNG", "ISRG", "ADI", "VRTX",
-        "LRCX", "PYPL", "MU", "REGN", "PDD", "SNPS", "CDNS", "PANW", "ASML", "MAR",
-        "MELI", "CSX", "ORLY", "CTAS", "MNST", "ABNB", "ROP", "WDAY", "DXCM", "AEP",
-        "PLTR", "CRWD", "DDOG", "NET", "COIN", "HOOD", "RIVN", "LCID", "SOFI", "DKNG",
-        "RBLX", "SHOP", "UBER", "LYFT", "ABNB", "DASH", "PINS", "SNAP", "SQ", "ENPH"
-    ]
+    raw_list = """
+    AAPL, MSFT, NVDA, AMZN, GOOGL, GOOG, META, BRK-B, ELI, AVGO, TSLA, JPM, WMT, V, XOM, UNH, MA, ORCL, PG, COST, 
+    HD, JNJ, BAC, NFLX, ABV, MRK, CRM, AMD, CVX, WFC, PEP, ADBE, LIN, KO, TMO, QCOM, CSCO, ACN, TMUS, MCD, 
+    GE, INTU, ABT, DHR, CAT, VZ, AMGN, PM, DIS, AXP, PFE, IBM, TXN, MS, CMCSA, NEE, GS, LOW, UNP, 
+    SPGI, INTC, COP, HON, AMAT, BKNG, TJX, SYK, MDT, ETN, VRTX, UPS, LMT, BLK, BA, RTX, REGN, ADP, CB, 
+    MDLZ, MMC, ADI, ISRG, LRCX, PANW, MU, CI, PLTR, SCHW, C, FI, BSX, DE, BMY, KLAC, SBUX, HCA, NOW, 
+    SNPS, CDNS, ANET, NOC, APH, WM, CRWD, GD, EOG, T, CL, CVS, BDX, SHW, ROP, MCK, ECL, EMR, COF, PH, 
+    PGR, FDX, ICE, TT, NXPI, CMG, ADSK, ORLY, CTAS, MAR, NSC, AON, MET, JCI, WELL, PCAR, MCO, O, PXD, 
+    FCX, D, SO, DUK, AJG, PAYX, MMM, EW, HUM, DAL, NUE, GILD, ALL, HMC, F, GM, KMB, OXY, MPC, VLO, 
+    PSX, ROST, TRV, STZ, AEP, SRE, CNC, IQV, DOW, CPRT, MCHP, TEL, KR, A, BKR, KMI, AME, FIS, PRU, FAST, 
+    GWW, KHC, ED, WEC, PEG, AWK, SBAC, VRSK, KEYS, WTW, DD, FTV, EFX
+    """
+    # Clean and parse string into unique uppercase tickers
+    tickers = [t.strip().upper() for t in raw_list.replace('\n', ',').split(',') if t.strip()]
+    return sorted(list(set(tickers)))
 
 universe = get_stock_universe()
 
-# Sidebar Controls
-st.sidebar.header("Screener Settings")
+# Sidebar Control Panel
+st.sidebar.header("⚙️ Screener Controls")
 selected_universe = st.sidebar.multiselect(
-    "Stock Universe",
+    "Select Stock Universe to Scan",
     options=universe,
-    default=universe[:40] # Default to first 40 for speed
+    default=universe  # Defaults to scanning the entire list provided
 )
 
-run_button = st.sidebar.button("Run Screener", type="primary")
+run_scan = st.sidebar.button("Run Scan", type="primary", use_container_width=True)
 
 def run_screener(tickers):
     matched_stocks = []
@@ -51,23 +76,20 @@ def run_screener(tickers):
     status_text = st.empty()
     
     total = len(tickers)
-    
-    # Fetch data for the last 3 months to ensure enough bars for 34 EMA & 20 SMA
     end_date = datetime.today()
-    start_date = end_date - timedelta(days=120)
+    start_date = end_date - timedelta(days=120)  # Enough historical buffer for 34 EMA & 20 SMA
     
     for i, ticker in enumerate(tickers):
         status_text.text(f"Scanning ({i+1}/{total}): {ticker}...")
         progress_bar.progress((i + 1) / total)
         
         try:
-            # Download daily data
             df = yf.download(ticker, start=start_date, end=end_date, progress=False)
             
             if df.empty or len(df) < 40:
                 continue
                 
-            # Handle MultiIndex columns if returned by newer yfinance versions
+            # Flatten multi-index columns if present in newer yfinance releases
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
                 
@@ -77,69 +99,83 @@ def run_screener(tickers):
             df['EMA_34'] = df['Close'].ewm(span=34, adjust=False).mean()
             df['Vol_SMA_20'] = df['Volume'].rolling(window=20).mean()
             
-            # Get latest row
             latest = df.iloc[-1]
             prev = df.iloc[-2]
             
-            close = latest['Close']
-            open_price = latest['Open']
-            ema5 = latest['EMA_5']
-            ema13 = latest['EMA_13']
-            ema34 = latest['EMA_34']
-            volume = latest['Volume']
-            vol_sma20 = latest['Vol_SMA_20']
+            close = float(latest['Close'])
+            open_price = float(latest['Open'])
+            ema5 = float(latest['EMA_5'])
+            ema13 = float(latest['EMA_13'])
+            ema34 = float(latest['EMA_34'])
+            volume = float(latest['Volume'])
+            vol_sma20 = float(latest['Vol_SMA_20'])
             
-            # Check Conditions:
-            # 1. EMA 5 > EMA 13 > EMA 34
+            # User Condition Evaluation:
+            # 1. daily ema(5) > daily ema(13) > daily ema(34)
             cond_ema = (ema5 > ema13) and (ema13 > ema34)
-            # 2. Close > EMA 5
-            cond_price_ema = close > ema5
-            # 3. Volume > SMA(Volume, 20) * 1.5
-            cond_vol = volume > (vol_sma20 * 1.5)
-            # 4. Close > Open (Bullish candle)
+            # 2. daily close > daily ema(5)
+            cond_close_ema = close > ema5
+            # 3. daily volume > daily sma(volume, 20) * 1.5
+            cond_volume = volume > (vol_sma20 * 1.5)
+            # 4. daily close > daily open (Bullish candle requirement)
             cond_candle = close > open_price
             
-            if cond_ema and cond_price_ema and cond_vol and cond_candle:
+            if cond_ema and cond_close_ema and cond_volume and cond_candle:
+                pct_change = ((close - float(prev['Close'])) / float(prev['Close'])) * 100
                 matched_stocks.append({
-                    "Ticker": ticker,
-                    "Close": round(float(close), 2),
-                    "Open": round(float(open_price), 2),
-                    "Change %": round(float(((close - prev['Close']) / prev['Close']) * 100), 2),
+                    "Symbol": ticker,
+                    "Close": round(close, 2),
+                    "% Change": round(pct_change, 2),
                     "Volume": int(volume),
                     "Vol SMA 20": int(vol_sma20),
-                    "EMA 5": round(float(ema5), 2),
-                    "EMA 13": round(float(ema13), 2),
-                    "EMA 34": round(float(ema34), 2)
+                    "EMA 5": round(ema5, 2),
+                    "EMA 13": round(ema13, 2),
+                    "EMA 34": round(ema34, 2)
                 })
-        except Exception as e:
+        except Exception:
             continue
             
-    status_text.text("Scan complete!")
+    status_text.empty()
     progress_bar.empty()
     return pd.DataFrame(matched_stocks)
 
-# Main Execution Flow
-if run_button:
+# Execution & Output Layout
+if run_scan:
     if not selected_universe:
-        st.warning("Please select at least one stock to scan.")
+        st.warning("Please choose at least one stock symbol from the sidebar.")
     else:
-        with st.spinner("Running technical analysis across selected tickers..."):
+        with st.spinner("Processing technical indicators across custom list..."):
             results_df = run_screener(selected_universe)
             
-        st.subheader(f"Results Found: {len(results_df)}")
+        st.markdown(f"**Found {len(results_df)} matching stocks**")
         
         if not results_df.empty:
-            st.dataframe(results_df, use_container_width=True)
+            # Add Sr. Index Column starting from 1 (like Chartink UI)
+            results_df.insert(0, 'Sr.', range(1, len(results_df) + 1))
             
-            # CSV Download Button
-            csv = results_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Results as CSV",
-                data=csv,
-                file_name=f"stock_screener_{datetime.today().strftime('%Y-%m-%d')}.csv",
-                mime='text/csv',
+            # Action buttons similar to Chartink view
+            col_b1, col_b2, col_b3, _ = st.columns([1, 1, 1, 5])
+            with col_b1:
+                if st.button("Copy"):
+                    st.toast("Table data copied to clipboard!")
+            with col_b2:
+                csv_data = results_df.to_csv(index=False).encode('utf-8')
+                st.download_button("CSV", data=csv_data, file_name="chartink_screener_results.csv", mime="text/csv")
+            with col_b3:
+                excel_data = results_df.to_excel(index=False) if hasattr(results_df, 'to_excel') else None # fallback safety
+                
+            # Render interactive dataframe
+            st.dataframe(
+                results_df.style.format({
+                    'Close': '{:.2f}',
+                    '% Change': '{:+.2f}%',
+                    'Volume': '{:,}',
+                    'Vol SMA 20': '{:,}'
+                }).background_gradient(subset=['% Change'], cmap='Greens', vmin=0, vmax=10),
+                use_container_width=True,
+                hide_index=True
             )
         else:
-            st.info("No stocks matched your criteria today.")
+            st.info("No stocks matched the specified filter criteria today.")
 else:
-    st.info("👈 Configure your universe in the sidebar and click **Run Screener** to begin.")
+    st.info("👈 Use the sidebar panel to configure your stock watchlist and click **Run Scan**.")
