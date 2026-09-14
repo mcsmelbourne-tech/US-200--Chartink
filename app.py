@@ -167,14 +167,14 @@ if run_scan:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
                 
-            # Render interactive dataframe
+            # Render interactive dataframe safely without matplotlib dependencies
             st.dataframe(
                 results_df.style.format({
                     'Close': '{:.2f}',
                     '% Change': '{:+.2f}%',
                     'Volume': '{:,}',
                     'Vol SMA 20': '{:,}'
-                }).background_gradient(subset=['% Change'], cmap='Greens', vmin=0, vmax=10),
+                }),
                 use_container_width=True,
                 hide_index=True
             )
